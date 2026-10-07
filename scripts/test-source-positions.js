@@ -9,6 +9,7 @@ const path = require("path");
 
 const { loadRuleSet } = require("../out/rules/loadRules");
 const { parseUdtXml, parseBlockXml } = require("../out/parser/udtXmlParser");
+const { parseUdtText } = require("../out/parser/udtTextParser");
 const { parsePlcTagXml } = require("../out/parser/plcTagXmlParser");
 const { buildTypeCache } = require("../out/cache/typeCache");
 const { BlockIndex, scanBlockFile } = require("../out/analysis/blockIndex");
@@ -80,6 +81,29 @@ assert.equal(unknownType?.line, lineOf(udtXml, 'Name="Nested"'), "an unknown mem
 const duplicates = cache.diagnostics.filter((d) => d.code === "duplicate-declaration");
 assert.equal(duplicates.length, 2);
 assert.ok(duplicates.every((d) => d.line === udt.line), "a duplicate PLC data type is reported on each copy's <Name> line");
+
+const initializedUdtText = `TYPE "UDT_Initialized"
+STRUCT
+  iNumber : INT := -1; // Some comment
+  iPositive : INT := 1;
+END_STRUCT;
+END_TYPE
+`;
+const [initializedUdt] = parseUdtText(initializedUdtText);
+assert.deepEqual(
+  initializedUdt.members.map((member) => [member.name, member.typeRef.name]),
+  [
+    ["iNumber", "INT"],
+    ["iPositive", "INT"],
+  ],
+  "member initializers are skipped through their semicolon rather than parsed as another member"
+);
+const initializedCache = buildTypeCache(ruleSet, [{ path: "Initialized.udt", decls: [initializedUdt] }]);
+assert.deepEqual(
+  initializedCache.diagnostics.filter((diagnostic) => diagnostic.code === "unknown-type"),
+  [],
+  "a negative numeric initializer is not reported as an unknown type"
+);
 
 // --- DATA_BLOCK export -----------------------------------------------------
 const dbXml = `<?xml version="1.0" encoding="utf-8"?>

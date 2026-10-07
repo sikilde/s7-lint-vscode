@@ -237,7 +237,24 @@ export function parseMemberFromCursor(cur: TokenCursor): MemberRef {
   cur.skipBraceBlock();
   cur.tryPunct(":");
   const typeRef = parseTypeRefFromCursor(cur);
-  cur.tryPunct(";");
+  if (cur.isOp(":=")) {
+    cur.next();
+    let depth = 0;
+    while (!cur.atEnd()) {
+      const t = cur.peek();
+      if (t.kind === "punct") {
+        if (t.text === ";" && depth === 0) {
+          cur.next();
+          break;
+        }
+        if (t.text === "(" || t.text === "[" || t.text === "{") depth++;
+        if (t.text === ")" || t.text === "]" || t.text === "}") depth--;
+      }
+      cur.next();
+    }
+  } else {
+    cur.tryPunct(";");
+  }
   // Quoting is only source spelling for a member name that starts with a
   // digit or collides with a reserved word. Store the symbolic name without
   // quotes so `Rec."3_Slave"` resolves against the declaration exactly like
