@@ -9,6 +9,12 @@ export const RECOMMENDED_SEMANTIC_COLORS_SETTING = "tiaLint.recommendedSemanticC
 
 export type RecommendedSemanticPaletteKind = "dark" | "light";
 
+const LOGICAL_OPERATOR_SCOPE = "keyword.operator.logical.s7dcl";
+const RECOMMENDED_LOGICAL_OPERATOR_COLORS: Record<RecommendedSemanticPaletteKind, string> = {
+  dark: "#707070",
+  light: "#404040",
+};
+
 export const RECOMMENDED_SEMANTIC_PALETTES: Record<RecommendedSemanticPaletteKind, Readonly<Record<string, string>>> = {
   dark: {
     s7TemporalType: "#D7BA7D",
@@ -17,6 +23,7 @@ export const RECOMMENDED_SEMANTIC_PALETTES: Record<RecommendedSemanticPaletteKin
     s7FloatType: "#4FC1FF",
     s7GenericType: "#4EC9B0",
     s7TextType: "#4FC1FF",
+    s7WordOperator: RECOMMENDED_LOGICAL_OPERATOR_COLORS.dark,
     s7UdtType: "#B8D7A3",
     s7CallableType: "#DCDCAA",
     s7CallableInstance: "#9CDCFE",
@@ -45,6 +52,7 @@ export const RECOMMENDED_SEMANTIC_PALETTES: Record<RecommendedSemanticPaletteKin
     s7FloatType: "#0070C1",
     s7GenericType: "#267F99",
     s7TextType: "#0070C1",
+    s7WordOperator: RECOMMENDED_LOGICAL_OPERATOR_COLORS.light,
     s7UdtType: "#6F42C1",
     s7CallableType: "#B54708",
     s7CallableInstance: "#001080",
@@ -90,6 +98,53 @@ const LEGACY_RECOMMENDED_COLORS: Readonly<Record<string, readonly string[]>> = {
   "parameter.s7Container": ["#C8A2C8", "#7B3F8C"],
   "variable.s7Container": ["#C8A2C8", "#7B3F8C"],
 };
+
+/** Adds a theme-specific TextMate color for S7 word operators. The contrast
+ * differs by theme: dark gray is readable on dark backgrounds, near-black on
+ * light backgrounds. Existing user rules are preserved unless explicitly
+ * overwritten by the install command. */
+export function withRecommendedOperatorTextMateColor(
+  existing: unknown,
+  themeName: string,
+  paletteKind: RecommendedSemanticPaletteKind,
+  overwriteCustom = true
+): Record<string, unknown> {
+  const root = isRecord(existing) ? existing : {};
+  const themeKey = `[${themeName}]`;
+  const currentTheme = isRecord(root[themeKey]) ? root[themeKey] : {};
+  const currentRules = Array.isArray(currentTheme.textMateRules) ? currentTheme.textMateRules : [];
+  const nextRules = [...currentRules];
+  const matchingIndex = nextRules.findIndex(
+    (rule) => isRecord(rule) && rule.scope === LOGICAL_OPERATOR_SCOPE && isRecord(rule.settings)
+  );
+  const color = RECOMMENDED_LOGICAL_OPERATOR_COLORS[paletteKind];
+
+  if (matchingIndex >= 0) {
+    const rule = nextRules[matchingIndex] as Record<string, unknown>;
+    const settings = rule.settings as Record<string, unknown>;
+    const currentColor = settings.foreground;
+    if (overwriteCustom || isRecommendedOperatorColor(currentColor)) {
+      nextRules[matchingIndex] = { ...rule, settings: { ...settings, foreground: color } };
+    }
+  } else {
+    nextRules.push({ scope: LOGICAL_OPERATOR_SCOPE, settings: { foreground: color } });
+  }
+
+  return {
+    ...root,
+    [themeKey]: {
+      ...currentTheme,
+      textMateRules: nextRules,
+    },
+  };
+}
+
+function isRecommendedOperatorColor(value: unknown): boolean {
+  return (
+    typeof value === "string" &&
+    Object.values(RECOMMENDED_LOGICAL_OPERATOR_COLORS).some((color) => color.toUpperCase() === value.toUpperCase())
+  );
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -157,6 +212,7 @@ export function withoutRecommendedSemanticColors(existing: unknown): Record<stri
     for (const selector of managedSelectors) {
       if (isManagedPresetValue(selector, rules[selector])) delete rules[selector];
     }
+
     const theme: Record<string, unknown> = { ...rawTheme };
     if (Object.keys(rules).length > 0) theme.rules = rules;
     else delete theme.rules;
@@ -164,6 +220,26 @@ export function withoutRecommendedSemanticColors(existing: unknown): Record<stri
     // The old manual installer added `enabled: true`. If nothing else remains
     // in this theme block, remove that legacy shell as well.
     if (Object.keys(theme).length === 1 && theme.enabled === true) delete theme.enabled;
+    if (Object.keys(theme).length > 0) next[themeKey] = theme;
+    else delete next[themeKey];
+  }
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+/** Removes only S7 Lint's managed word-operator color, retaining other
+ * TextMate rules and any user-customized foreground. */
+export function withoutRecommendedOperatorTextMateColor(existing: unknown): Record<string, unknown> | undefined {
+  if (!isRecord(existing)) return undefined;
+  const next: Record<string, unknown> = { ...existing };
+  for (const [themeKey, rawTheme] of Object.entries(existing)) {
+    if (!/^\[.+\]$/.test(themeKey) || !isRecord(rawTheme) || !Array.isArray(rawTheme.textMateRules)) continue;
+    const rules = rawTheme.textMateRules.filter((rule) => {
+      if (!isRecord(rule) || rule.scope !== LOGICAL_OPERATOR_SCOPE || !isRecord(rule.settings)) return true;
+      return !isRecommendedOperatorColor(rule.settings.foreground);
+    });
+    const theme: Record<string, unknown> = { ...rawTheme };
+    if (rules.length > 0) theme.textMateRules = rules;
+    else delete theme.textMateRules;
     if (Object.keys(theme).length > 0) next[themeKey] = theme;
     else delete next[themeKey];
   }

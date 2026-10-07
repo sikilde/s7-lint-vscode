@@ -9,7 +9,9 @@ const {
   INSTALL_RECOMMENDED_SEMANTIC_COLORS_COMMAND,
   RECOMMENDED_SEMANTIC_COLORS_SETTING,
   RECOMMENDED_SEMANTIC_PALETTES,
+  withRecommendedOperatorTextMateColor,
   withRecommendedSemanticColors,
+  withoutRecommendedOperatorTextMateColor,
   withoutRecommendedSemanticColors,
 } = require("../out/semanticColors");
 
@@ -37,6 +39,42 @@ test("dark preset is scoped to the active theme", () => {
 test("light preset uses the light palette", () => {
   const result = withRecommendedSemanticColors(null, "Default Light Modern", "light");
   assert.deepEqual(result["[Default Light Modern]"].rules, RECOMMENDED_SEMANTIC_PALETTES.light);
+});
+
+test("word operators get a theme-aware TextMate color without replacing other rules", () => {
+  const existing = {
+    "[Dark]": {
+      textMateRules: [{ scope: "comment", settings: { foreground: "#00FF00" } }],
+    },
+  };
+  const dark = withRecommendedOperatorTextMateColor(existing, "Dark", "dark");
+  const light = withRecommendedOperatorTextMateColor(undefined, "Light", "light");
+  assert.equal(dark["[Dark]"].textMateRules[0].settings.foreground, "#00FF00");
+  assert.deepEqual(dark["[Dark]"].textMateRules[1], {
+    scope: "keyword.operator.logical.s7dcl",
+    settings: { foreground: "#707070" },
+  });
+  assert.deepEqual(light["[Light]"].textMateRules, [
+    { scope: "keyword.operator.logical.s7dcl", settings: { foreground: "#404040" } },
+  ]);
+});
+
+test("operator TextMate colors preserve custom overrides and remove only managed rules", () => {
+  const custom = {
+    "[Dark]": {
+      textMateRules: [
+        { scope: "keyword.operator.logical.s7dcl", settings: { foreground: "#123456" } },
+        { scope: "comment", settings: { foreground: "#00FF00" } },
+      ],
+    },
+  };
+  const preserved = withRecommendedOperatorTextMateColor(custom, "Dark", "dark", false);
+  assert.equal(preserved["[Dark]"].textMateRules[0].settings.foreground, "#123456");
+
+  const managed = withRecommendedOperatorTextMateColor(undefined, "Dark", "dark");
+  const cleaned = withoutRecommendedOperatorTextMateColor(managed);
+  assert.equal(cleaned, undefined);
+  assert.equal(withoutRecommendedOperatorTextMateColor(custom)["[Dark]"].textMateRules.length, 2);
 });
 
 test("DATA_BLOCK has a distinct preset color in dark and light themes", () => {

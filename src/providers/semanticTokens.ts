@@ -31,7 +31,8 @@
 // Elementary types are grouped by meaning (temporal, integer/bit, boolean,
 // float, generic/reference, and text); project UDTs are `s7UdtType`
 // (`struct`), and STRUCT/Siemens system records use standard `struct`.
-// `NOT` uses `operator`, matching the grammar's `keyword.operator.logical`.
+// Word operators use `s7WordOperator` so a theme can color them distinctly
+// from symbols such as `+`, `:=`, and `^`.
 import * as vscode from "vscode";
 import { BlockIndex } from "../analysis/blockIndex";
 import { buildDocumentIndex } from "../analysis/documentIndex";
@@ -51,6 +52,7 @@ export const SEMANTIC_TOKEN_TYPES = [
   "keyword",
   "number",
   "operator",
+  "s7WordOperator",
   "string",
   "charLiteral",
   "timeLiteral",

@@ -45,7 +45,9 @@ import {
   INSTALL_RECOMMENDED_SEMANTIC_COLORS_COMMAND,
   RECOMMENDED_SEMANTIC_COLORS_SETTING,
   RecommendedSemanticPaletteKind,
+  withRecommendedOperatorTextMateColor,
   withRecommendedSemanticColors,
+  withoutRecommendedOperatorTextMateColor,
   withoutRecommendedSemanticColors,
 } from "./semanticColors";
 
@@ -104,14 +106,19 @@ function ensureRecommendedSemanticColors(showResult: boolean, overwriteCustom = 
     }
 
     const editorConfig = vscode.workspace.getConfiguration("editor");
-    const current = editorConfig.inspect<unknown>("semanticTokenColorCustomizations")?.globalValue;
-    const next = withRecommendedSemanticColors(current, themeName, paletteKind, overwriteCustom);
-    const changed = JSON.stringify(current) !== JSON.stringify(next);
-    if (changed) {
+    const currentSemantic = editorConfig.inspect<unknown>("semanticTokenColorCustomizations")?.globalValue;
+    const nextSemantic = withRecommendedSemanticColors(currentSemantic, themeName, paletteKind, overwriteCustom);
+    const currentTextMate = editorConfig.inspect<unknown>("tokenColorCustomizations")?.globalValue;
+    const nextTextMate = withRecommendedOperatorTextMateColor(currentTextMate, themeName, paletteKind, overwriteCustom);
+    const semanticChanged = JSON.stringify(currentSemantic) !== JSON.stringify(nextSemantic);
+    const textMateChanged = JSON.stringify(currentTextMate) !== JSON.stringify(nextTextMate);
+    const changed = semanticChanged || textMateChanged;
+    if (semanticChanged || textMateChanged) {
       try {
-        await editorConfig.update("semanticTokenColorCustomizations", next, vscode.ConfigurationTarget.Global);
+        if (semanticChanged) await editorConfig.update("semanticTokenColorCustomizations", nextSemantic, vscode.ConfigurationTarget.Global);
+        if (textMateChanged) await editorConfig.update("tokenColorCustomizations", nextTextMate, vscode.ConfigurationTarget.Global);
       } catch (err) {
-        output.appendLine(`[S7 Lint] Failed to install recommended semantic colors: ${String(err)}`);
+        output.appendLine(`[S7 Lint] Failed to install recommended editor colors: ${String(err)}`);
         if (showResult) {
           void vscode.window.showErrorMessage(
             'S7 Lint: could not update User Settings -- see the "S7 Lint" output channel.'
@@ -137,14 +144,19 @@ function ensureRecommendedSemanticColors(showResult: boolean, overwriteCustom = 
 function removeRecommendedSemanticColors(showResult: boolean): Promise<void> {
   return enqueueSemanticColorWrite(async () => {
     const editorConfig = vscode.workspace.getConfiguration("editor");
-    const current = editorConfig.inspect<unknown>("semanticTokenColorCustomizations")?.globalValue;
-    const next = withoutRecommendedSemanticColors(current);
-    const changed = JSON.stringify(current) !== JSON.stringify(next);
-    if (changed) {
+    const currentSemantic = editorConfig.inspect<unknown>("semanticTokenColorCustomizations")?.globalValue;
+    const nextSemantic = withoutRecommendedSemanticColors(currentSemantic);
+    const currentTextMate = editorConfig.inspect<unknown>("tokenColorCustomizations")?.globalValue;
+    const nextTextMate = withoutRecommendedOperatorTextMateColor(currentTextMate);
+    const semanticChanged = JSON.stringify(currentSemantic) !== JSON.stringify(nextSemantic);
+    const textMateChanged = JSON.stringify(currentTextMate) !== JSON.stringify(nextTextMate);
+    const changed = semanticChanged || textMateChanged;
+    if (semanticChanged || textMateChanged) {
       try {
-        await editorConfig.update("semanticTokenColorCustomizations", next, vscode.ConfigurationTarget.Global);
+        if (semanticChanged) await editorConfig.update("semanticTokenColorCustomizations", nextSemantic, vscode.ConfigurationTarget.Global);
+        if (textMateChanged) await editorConfig.update("tokenColorCustomizations", nextTextMate, vscode.ConfigurationTarget.Global);
       } catch (err) {
-        output.appendLine(`[S7 Lint] Failed to remove recommended semantic colors: ${String(err)}`);
+        output.appendLine(`[S7 Lint] Failed to remove recommended editor colors: ${String(err)}`);
         if (showResult) {
           void vscode.window.showErrorMessage(
             'S7 Lint: could not update User Settings -- see the "S7 Lint" output channel.'

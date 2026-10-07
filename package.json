@@ -241,6 +241,11 @@
         "id": "s7InterfaceMember",
         "superType": "parameter",
         "description": "A resolved scalar member reached through an FB/FC Input, Output, or InOut interface value"
+      },
+      {
+        "id": "s7WordOperator",
+        "superType": "operator",
+        "description": "A word-form SCL operator such as NOT or MOD"
       }
     ],
     "semanticTokenModifiers": [

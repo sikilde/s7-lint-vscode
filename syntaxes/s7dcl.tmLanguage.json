@@ -13,7 +13,8 @@
     { "include": "#scl-conditional-keywords" },
     { "include": "#scl-loop-keywords" },
     { "include": "#scl-other-control-keywords" },
-    { "include": "#scl-logical-operators" },
+    { "include": "#scl-boolean-operators" },
+    { "include": "#scl-word-operators" },
     { "include": "#scl-boolean-literals" },
     { "include": "#scl-null-literals" },
     { "include": "#scl-base-types" },
@@ -95,9 +96,13 @@
       "name": "keyword.control.s7dcl",
       "match": "\\b(GOTO|RETURN|REGION|END_REGION)\\b"
     },
-    "scl-logical-operators": {
+    "scl-boolean-operators": {
+      "name": "keyword.control.logical.s7dcl",
+      "match": "\\b(AND|OR|XOR)\\b"
+    },
+    "scl-word-operators": {
       "name": "keyword.operator.logical.s7dcl",
-      "match": "\\b(AND|OR|XOR|NOT|MOD)\\b"
+      "match": "\\b(NOT|MOD)\\b"
     },
     "scl-boolean-literals": {
       "name": "constant.language.boolean.s7dcl",

@@ -1892,7 +1892,15 @@ export function buildDocumentIndex(
   /** Classifies literals/operators found while skipping over a default
    * value or a pin's value expression, without trying to fully parse it. */
   function classifyLiteralOrSkip(): boolean {
-    if (cur.isIdent("NOT")) {
+    if (cur.isIdent("NOT") || cur.isIdent("MOD")) {
+      push(cur.next(), "s7WordOperator", []);
+      return true;
+    }
+    const token = cur.peek();
+    if (
+      (token.kind === "punct" || token.kind === "op") &&
+      ["=", "<>", "<", ">", "<=", ">="].includes(token.text)
+    ) {
       push(cur.next(), "operator", []);
       return true;
     }
@@ -2559,7 +2567,7 @@ export function buildDocumentIndex(
         push(nameTok, "parameter", [], hover, definition, pinRenameKey);
         if (!instructionEntry && ownerBlock) checkFbInstancePin(nameTok, pinName, opTok, ownerBlock, callName);
       }
-      if (cur.isIdent("NOT")) push(cur.next(), "operator", []); // e.g. `in3 := NOT #tag`
+      if (cur.isIdent("NOT") || cur.isIdent("MOD")) push(cur.next(), "s7WordOperator", []);
       // Nested instruction/instance calls need the same walk as top-level
       // calls so their callee tokens don't fall through as quoted strings.
       if (tryWalkCall(inSclBody)) continue;

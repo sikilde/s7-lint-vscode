@@ -12,11 +12,29 @@ const { loadRuleSet } = require("../out/rules/loadRules");
 const text = `FUNCTION_BLOCK "FB_Test"
 VAR
   sString : String[100];
+  bBool : Bool;
+  iValue : Int;
 END_VAR
 BEGIN
   #sString := "fcDInt_To_String_v1"(#_iState);
   #sString := CONCAT(IN1 := #sString, IN2 := "fcDInt_To_String_v1"(#_SQL_DefaultRetData.Data.RetCode));
   #sString := "ordinary string";
+  #bBool := NOT #bBool;
+  #iValue := #iValue MOD 2;
+  IF #iValue < 10 THEN
+    #iValue := #iValue + 1;
+  ELSIF #iValue > 10 AND #iValue <> 12 THEN
+    #iValue := #iValue - 1;
+  END_IF;
+  IF #iValue <= 20 THEN
+    #iValue := #iValue;
+  END_IF;
+  IF #iValue >= 0 THEN
+    #iValue := #iValue;
+  END_IF;
+  IF #iValue = 0 THEN
+    #iValue := #iValue;
+  END_IF;
 END_FUNCTION_BLOCK
 `;
 const file = path.join(__dirname, "nested-call-highlighting.scl");
@@ -37,5 +55,19 @@ const ordinaryString = index.spans.find((span) => {
   return span.line === ordinaryStringLine && line.slice(span.startCol - 1, span.startCol - 1 + span.length) === '"ordinary string"';
 });
 assert.equal(ordinaryString?.tokenType, "string", "a quoted string value remains highlighted as a string");
+for (const operator of ["NOT", "MOD"]) {
+  const operatorSpan = index.spans.find((span) => {
+    const line = text.split(/\r?\n/)[span.line - 1] ?? "";
+    return line.slice(span.startCol - 1, span.startCol - 1 + span.length) === operator;
+  });
+  assert.equal(operatorSpan?.tokenType, "s7WordOperator", `${operator} uses the S7 word-operator semantic token`);
+}
+for (const operator of ["<", ">", "<>", "<=", ">=", "="]) {
+  const operatorSpan = index.spans.find((span) => {
+    const line = text.split(/\r?\n/)[span.line - 1] ?? "";
+    return line.slice(span.startCol - 1, span.startCol - 1 + span.length) === operator;
+  });
+  assert.equal(operatorSpan?.tokenType, "operator", `${operator} in an IF condition uses the operator semantic token`);
+}
 
 console.log("Nested quoted-call highlighting regressions passed.");
