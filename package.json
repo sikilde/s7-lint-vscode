@@ -32,6 +32,9 @@
     "Linters"
   ],
   "activationEvents": [
+    "onLanguage:s7dcl",
+    "onLanguage:s7udt",
+    "onLanguage:s7scl",
     "workspaceContains:**/*.s7dcl",
     "workspaceContains:**/*.db",
     "workspaceContains:**/*.udt",
