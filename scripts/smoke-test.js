@@ -356,7 +356,7 @@ function expectHover(line, text, expectedText, why) {
 // no span at all: no hover, no Ctrl+click, no pin/type validation.
 expectSpan(12, "PT", "parameter", "a pin following a parenthesised value must still resolve");
 expectSpan(12, "IN", "parameter", "the pin before it, as a control");
-expectSpan(12, "Limit", "parameter", "an FB input reads like a function parameter at its use site");
+expectSpan(12, "Limit", "variable", "an FB input uses the variable role at its use site");
 expectSpan(12, "A", "variable", "operands INSIDE the parenthesised value still resolve");
 expectSpan(12, "T1", "function", "an instruction instance uses the standard callable/function family");
 expectSpan(7, "TON", "s7CallableType", "an instruction instance type uses the callable-type subtype");
@@ -608,8 +608,8 @@ expectIndexedBlockShape(
 );
 
 // An FB/FC interface is still the source of a resolved scalar value after
-// walking through one or more UDT members. Preserve the parameter role at
-// scalar leaves, while UDT/ARRAY path segments retain their structural role.
+// walking through one or more UDT members. Keep interface values and scalar
+// leaves variable-colored, while UDT/ARRAY path segments retain their structural role.
 // A static VAR with the same UDT shape is the control: its leaves stay normal
 // properties rather than becoming interface-colored.
 const interfaceFixtureLines = [
@@ -679,10 +679,13 @@ function expectInterfaceSpan(lineFragment, text, tokenType, modifiers, occurrenc
   );
 }
 
-expectInterfaceSpan("TestOutput.Test_Bool", "Test_Bool", "s7InterfaceMember", [], 1, "VAR_OUTPUT scalar leaves inherit the parameter role");
-expectInterfaceSpan("TestOutput.Test_Bool", "Test_Bool", "s7InterfaceMember", [], 2, "VAR_INPUT scalar leaves inherit the parameter role");
+expectInterfaceSpan('  TestInput : "Base";', "TestInput", "variable", ["declaration"], 1, "VAR_INPUT declarations use the variable role");
+expectInterfaceSpan('  TestOutput : "Base";', "TestOutput", "variable", ["declaration"], 1, "VAR_OUTPUT declarations use the variable role");
+expectInterfaceSpan('  TestInOut : "Base";', "TestInOut", "variable", ["declaration"], 1, "VAR_IN_OUT declarations use the variable role");
+expectInterfaceSpan("TestOutput.Test_Bool", "Test_Bool", "s7InterfaceMember", [], 1, "VAR_OUTPUT scalar leaves inherit the variable role");
+expectInterfaceSpan("TestOutput.Test_Bool", "Test_Bool", "s7InterfaceMember", [], 2, "VAR_INPUT scalar leaves inherit the variable role");
 expectInterfaceSpan("TestInOut.TestNested.Member", "TestNested", "property", ["s7Container"], 1, "an interface-path UDT segment keeps its container color");
-expectInterfaceSpan("TestInOut.TestNested.Member", "Member", "s7InterfaceMember", [], 1, "a nested VAR_IN_OUT scalar leaf inherits the parameter role");
+expectInterfaceSpan("TestInOut.TestNested.Member", "Member", "s7InterfaceMember", [], 1, "a nested VAR_IN_OUT scalar leaf inherits the variable role");
 expectInterfaceSpan("TestInOut.Items", "Items", "property", ["s7Indexable"], 1, "an interface-path ARRAY keeps its indexable color");
 expectInterfaceSpan("TestVar.Test_Bool", "Test_Bool", "property", [], 1, "a static VAR scalar member remains a normal property");
 expectInterfaceSpan("TestVar.TestNested.Member", "TestNested", "property", ["s7Container"], 1, "a static VAR UDT segment remains a container property");

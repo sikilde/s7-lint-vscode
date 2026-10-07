@@ -843,19 +843,17 @@ export function buildDocumentIndex(
   /** Semantic-token type for a declared local tag in NON-CALL contexts.
    * Callable objects get their S7-specific variable subtype; `tryWalkCall`
    * reclassifies the direct callee occurrence as `function`. A STRUCT/UDT or
-   * DATA_BLOCK member is an object `property`; an FB/FC interface value is a
-   * `parameter`; every other tag is a plain `variable`. */
+   * DATA_BLOCK member is an object `property`; FB/FC interface values and
+   * other tags are `variable`s inside their declaring block. */
   function localTagTokenType(decl: LocalDecl | undefined): string {
     if (!decl) return "variable";
     if (isCallableInstanceDecl(decl)) return "s7CallableInstance";
     if (decl.section === "STRUCT" || currentBlockType === "DATA_BLOCK") return "property";
-    if (isInterfaceDecl(decl)) return "parameter";
     return "variable";
   }
 
-  /** An FB/FC interface value keeps its parameter identity through nested
-   * UDT/STRUCT access. The root itself is the standard `parameter`; resolved
-   * scalar leaves use the `s7InterfaceMember` subtype while structural
+  /** Identifies an FB/FC interface value so resolved scalar leaves through
+   * nested UDT/STRUCT access use the `s7InterfaceMember` subtype while structural
    * members retain their container/indexable presentation. */
   function isInterfaceDecl(decl: LocalDecl | undefined): boolean {
     return Boolean(

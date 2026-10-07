@@ -19,8 +19,9 @@
 // `variable` subtype, so global I/O/memory symbols remain visually distinct
 // from local variables and DATA_BLOCKs.
 // A scalar field reached through an FB/FC Input/Output/InOut path uses
-// `s7InterfaceMember`, a subtype of the standard `parameter`, so the active
-// theme carries the interface color through nested UDT access. Structural
+// `s7InterfaceMember`, a subtype of the standard `variable`, so it displays
+// like a variable through nested UDT access. Named call-site arguments remain
+// the standard `parameter` token. Structural
 // segments remain properties with the capability colors below.
 // `s7Container` and `s7Indexable` are composable capability modifiers:
 // a member can carry either or both without losing its variable/parameter/

@@ -279,11 +279,11 @@ test("manifest contributes the user-facing command", () => {
   for (const language of ["s7scl", "s7dcl", "s7udt"]) {
     assert.equal(manifest.contributes.configurationDefaults[`[${language}]`]["editor.semanticHighlighting.enabled"], true);
     const scopes = manifest.contributes.semanticTokenScopes.find((entry) => entry.language === language)?.scopes;
-    assert.ok(scopes?.s7InterfaceMember?.includes("variable.parameter"), `${language} must map interface members to parameter fallback scope`);
+    assert.ok(scopes?.s7InterfaceMember?.includes("variable.other.readwrite"), `${language} must map interface members to variable fallback scope`);
     assert.ok(scopes?.s7PlcTag?.includes("variable.other.global"), `${language} must map PLC tags to a global-variable fallback scope`);
   }
   const interfaceMember = manifest.contributes.semanticTokenTypes.find((entry) => entry.id === "s7InterfaceMember");
-  assert.equal(interfaceMember?.superType, "parameter", "interface members must inherit the active theme's parameter color");
+  assert.equal(interfaceMember?.superType, "variable", "interface members must inherit the active theme's variable color");
   const plcTag = manifest.contributes.semanticTokenTypes.find((entry) => entry.id === "s7PlcTag");
   assert.equal(plcTag?.superType, "variable", "PLC tags must inherit the active theme's variable color");
 });

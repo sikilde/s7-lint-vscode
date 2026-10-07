@@ -239,7 +239,7 @@
       },
       {
         "id": "s7InterfaceMember",
-        "superType": "parameter",
+        "superType": "variable",
         "description": "A resolved scalar member reached through an FB/FC Input, Output, or InOut interface value"
       },
       {
@@ -333,8 +333,8 @@
             "variable.other.readwrite"
           ],
           "s7InterfaceMember": [
-            "variable.parameter",
-            "variable.other.readwrite"
+            "variable.other.readwrite",
+            "variable.other"
           ]
         }
       },
@@ -404,8 +404,8 @@
             "variable.other.readwrite"
           ],
           "s7InterfaceMember": [
-            "variable.parameter",
-            "variable.other.readwrite"
+            "variable.other.readwrite",
+            "variable.other"
           ]
         }
       },
@@ -475,8 +475,8 @@
             "variable.other.readwrite"
           ],
           "s7InterfaceMember": [
-            "variable.parameter",
-            "variable.other.readwrite"
+            "variable.other.readwrite",
+            "variable.other"
           ]
         }
       }

@@ -103,10 +103,10 @@ assertToken('DATA_BLOCK "DB_IPC_Interface"', '"DB_IPC_Interface"', "s7DataBlock"
 assertToken('    Header  : "KDT_IPC_Header";', "Header", "property", ["declaration"]);
 assertToken('    Header  : "KDT_IPC_Header";', '"KDT_IPC_Header"', "s7UdtType");
 
-// Block interfaces behave like parameters; block/instruction instances stay
+// Block interfaces behave like variables inside their block; block/instruction instances stay
 // variables at declaration/reference sites, their FB/timer types are classes,
 // and only a direct invocation occurrence is a function.
-assertToken("    Active    : BOOL;", "Active", "parameter", ["declaration"]);
+assertToken("    Active    : BOOL;", "Active", "variable", ["declaration"]);
 assertToken("    Active    : BOOL;", "BOOL", "s7BooleanType", ["defaultLibrary"]);
 assertToken('FUNCTION_BLOCK "IPC_Manager"', '"IPC_Manager"', "s7CallableType", ["declaration"]);
 assertToken("    HB_Timer    : TON;", "HB_Timer", "s7CallableInstance", ["declaration"]);
@@ -271,7 +271,7 @@ const expectedSupertypes = {
   s7CallableInstance: "variable",
   s7DataBlock: "variable",
   s7PlcTag: "variable",
-  s7InterfaceMember: "parameter",
+  s7InterfaceMember: "variable",
 };
 for (const [id, expectedSuperType] of Object.entries(expectedSupertypes)) {
   const entry = customTypes.get(id);
