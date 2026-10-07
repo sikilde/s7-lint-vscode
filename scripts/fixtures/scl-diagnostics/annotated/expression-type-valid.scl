@@ -4,6 +4,7 @@ VERSION : 0.1
 
 VAR
     v_bool   : Bool := FALSE;
+    v_text   : String[100];
 
     v_int_a  : Int := 1;
     v_int_b  : Int := 2;
@@ -68,5 +69,8 @@ BEGIN
 
     #v_real_a := #v_real_a*-1.0;
     // EXPECT-PASS: TT-P013
+
+    #v_text := CONCAT(IN1 := 'It$'s!', IN2 := ' a string');
+    // EXPECT-PASS: TT-P014
 
 END_FUNCTION_BLOCK

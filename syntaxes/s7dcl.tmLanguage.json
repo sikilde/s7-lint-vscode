@@ -36,15 +36,11 @@
       "patterns": [
         {
           "name": "string.quoted.double.s7dcl",
-          "begin": "\"",
-          "end": "\"",
-          "patterns": [{ "match": "\\$.", "name": "constant.character.escape.s7dcl" }]
+          "match": "\"(?:\\$.|[^\"$])*\""
         },
         {
           "name": "string.quoted.single.s7dcl",
-          "begin": "'",
-          "end": "'",
-          "patterns": [{ "match": "\\$.", "name": "constant.character.escape.s7dcl" }]
+          "match": "'(?:\\$.|[^'$])*'"
         }
       ]
     },

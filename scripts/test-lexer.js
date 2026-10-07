@@ -30,6 +30,25 @@ expectTokens("#arr[1]-1", ["ident:#arr", "punct:[", "number:1", "punct:]", "punc
 expectTokens("(#a)-1", ["punct:(", "ident:#a", "punct:)", "punct:-", "number:1"]);
 expectTokens("#ref^-1", ["ident:#ref", "punct:^", "punct:-", "number:1"]);
 expectTokens('"Tag"-1', ['string:"Tag"', "punct:-", "number:1"]);
+
+// Siemens `$'` escapes a quote inside a single-quoted string. It must not
+// terminate the first CONCAT argument and hide the following IN2 parameter.
+expectTokens(
+  "CONCAT(IN1 := 'It$'s!', IN2 := ' a string')",
+  [
+    "ident:CONCAT",
+    "punct:(",
+    "ident:IN1",
+    "op::=",
+    "string:'It$'s!'",
+    "punct:,",
+    "ident:IN2",
+    "op::=",
+    "string:' a string'",
+    "punct:)",
+  ]
+);
+expectTokens("'$$'", ["string:'$$'"]);
 expectTokens("16#FF-1", ["number:16", "ident:#FF", "punct:-", "number:1"]);
 
 // --- sign: anything else before it -----------------------------------------

@@ -204,6 +204,11 @@ export class Lexer {
         this.advance();
         let value = "";
         while (this.peekChar() !== quote && this.peekChar() !== "") {
+          if (this.peekChar() === "$" && (this.peekChar(1) === quote || this.peekChar(1) === "$")) {
+            value += this.advance();
+            value += this.advance();
+            continue;
+          }
           value += this.advance();
         }
         if (this.peekChar() === "") {
