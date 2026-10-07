@@ -41,6 +41,20 @@ test("light preset uses the light palette", () => {
   assert.deepEqual(result["[Default Light Modern]"].rules, RECOMMENDED_SEMANTIC_PALETTES.light);
 });
 
+test("dark parameters use the requested rose color", () => {
+  assert.equal(RECOMMENDED_SEMANTIC_PALETTES.dark.parameter, "#A13A7F");
+  const result = withRecommendedSemanticColors(undefined, "Default Dark Modern", "dark");
+  assert.equal(result["[Default Dark Modern]"].rules.parameter, "#A13A7F");
+});
+
+test("dark strings use the default dark variable color", () => {
+  assert.equal(RECOMMENDED_SEMANTIC_PALETTES.dark.string, "#9CDCFE");
+});
+
+test("dark word operators use the recommended dark logical-operator color", () => {
+  assert.equal(RECOMMENDED_SEMANTIC_PALETTES.dark.s7WordOperator, "#707070");
+});
+
 test("word operators get a theme-aware TextMate color without replacing other rules", () => {
   const existing = {
     "[Dark]": {

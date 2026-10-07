@@ -23,6 +23,8 @@ export const RECOMMENDED_SEMANTIC_PALETTES: Record<RecommendedSemanticPaletteKin
     s7FloatType: "#4FC1FF",
     s7GenericType: "#4EC9B0",
     s7TextType: "#4FC1FF",
+    parameter: "#A13A7F",
+    string: "#9CDCFE",
     s7WordOperator: RECOMMENDED_LOGICAL_OPERATOR_COLORS.dark,
     s7UdtType: "#B8D7A3",
     s7CallableType: "#DCDCAA",
