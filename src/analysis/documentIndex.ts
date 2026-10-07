@@ -2560,6 +2560,9 @@ export function buildDocumentIndex(
         if (!instructionEntry && ownerBlock) checkFbInstancePin(nameTok, pinName, opTok, ownerBlock, callName);
       }
       if (cur.isIdent("NOT")) push(cur.next(), "operator", []); // e.g. `in3 := NOT #tag`
+      // Nested instruction/instance calls need the same walk as top-level
+      // calls so their callee tokens don't fall through as quoted strings.
+      if (tryWalkCall(inSclBody)) continue;
       // value expression -- single operand/literal in every real export seen.
       const operand = walkOperandRef();
       if (operand) {
