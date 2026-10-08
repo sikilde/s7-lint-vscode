@@ -324,6 +324,12 @@ function isQuotedChainMember(prevToken: Token | null, stringToken: Token): boole
   return !!prevToken && prevToken.kind === "punct" && prevToken.text === "." && stringToken.kind === "string";
 }
 
+/** The `#` in a TIA-exported `"DB".#member` is part of the already-recorded
+ * external member chain, not the start of a new local operand. */
+function isHashPrefixedChainMember(prevToken: Token | null, token: Token): boolean {
+  return !!prevToken && prevToken.kind === "punct" && prevToken.text === "." && token.kind === "ident" && token.text.startsWith("#");
+}
+
 function skipToSemicolon(cur: TokenCursor): void {
   let depth = 0;
   while (!cur.atEnd()) {
@@ -449,6 +455,13 @@ function memberSegmentName(tok: Token): string | null {
   return null;
 }
 
+/** A TIA-exported external DB member can carry the local-tag `#` prefix,
+ * e.g. `"DB".#member`. It is not part of the declared member name. */
+function externalMemberSegmentName(tok: Token): string | null {
+  if (tok.kind === "ident" && tok.text.startsWith("#")) return tok.text.slice(1);
+  return memberSegmentName(tok);
+}
+
 function peekOperandRefChainAt(cur: TokenCursor, startOffset: number, localTags?: LocalTagNames): { ref: OperandRef; length: number } {
   const hashTok = cur.peek(startOffset);
   let offset: number;
@@ -500,7 +513,7 @@ function peekExternalRefChainAt(cur: TokenCursor, startOffset: number): { ref: O
     const dot = cur.peek(offset);
     const member = cur.peek(offset + 1);
     if (dot.kind !== "punct" || dot.text !== ".") break;
-    const memberName = memberSegmentName(member);
+    const memberName = externalMemberSegmentName(member);
     if (memberName === null) break;
     segments.push(memberName);
     offset += 2;
@@ -582,7 +595,7 @@ function collectArgValue(
       extraTokens++;
       continue;
     }
-    if (looksLikeOperandRefStart(cur, localTags) && !isLiteralOrWireTail(prevToken, t)) {
+    if (looksLikeOperandRefStart(cur, localTags) && !isLiteralOrWireTail(prevToken, t) && !isHashPrefixedChainMember(prevToken, t)) {
       operandRefsOut.push(peekOperandRefChain(cur, localTags));
     } else if (looksLikeExternalRefStart(cur) && !isQuotedLocalTagName(prevToken, t) && !isQuotedChainMember(prevToken, t)) {
       operandRefsOut.push(peekExternalRefChain(cur));
@@ -899,6 +912,12 @@ function peekSimpleCondition(
     return { kind: "bare-identifier", negated, name: base.text, line: base.line, col: base.col };
   }
 
+  if (looksLikeExternalRefStartAt(cur, offset)) {
+    const { ref, length } = peekExternalRefChainAt(cur, offset);
+    offset += length;
+    if (!isTerminator(cur.peek(offset))) return null;
+    return { kind: "tag", negated, ref };
+  }
   const quotedCandidate = peekQuotedExternalCandidateAt(cur, offset);
   if (quotedCandidate) {
     offset += 1;
@@ -1045,14 +1064,6 @@ function peekPrimaryAt(cur: TokenCursor, offset: number, localTags?: LocalTagNam
   // it as an operand candidate here so the expression checker can resolve a
   // real tag through BlockIndex; an unknown candidate evaluates to no known
   // type, which is the same conservative outcome the literal path had.
-  const quotedCandidate = peekQuotedExternalCandidateAt(cur, offset);
-  if (quotedCandidate) {
-    return {
-      node: { kind: "operand", ref: quotedCandidate, line: t0.line, col: t0.col, ...endPosAt(cur, offset) },
-      nextOffset: offset + 1,
-    };
-  }
-
   const litLen = peekLiteralRunLength(cur, offset);
   if (litLen > 0) {
     let raw = "";
@@ -1102,6 +1113,14 @@ function peekPrimaryAt(cur: TokenCursor, offset: number, localTags?: LocalTagNam
     return {
       node: { kind: "operand", ref, line: t0.line, col: t0.col, ...endPosAt(cur, offset + length - 1) },
       nextOffset: offset + length,
+    };
+  }
+
+  const quotedCandidate = peekQuotedExternalCandidateAt(cur, offset);
+  if (quotedCandidate) {
+    return {
+      node: { kind: "operand", ref: quotedCandidate, line: t0.line, col: t0.col, ...endPosAt(cur, offset) },
+      nextOffset: offset + 1,
     };
   }
 
@@ -1276,7 +1295,7 @@ function parseSclBody(
     // `operandRefs`, see `parseCallArgs` -- this only sees what's left
     // once a call attempt above has failed.)
     const t0 = cur.peek();
-    if (looksLikeOperandRefStart(cur, localTags) && !isLiteralOrWireTail(prevToken, t0)) {
+    if (looksLikeOperandRefStart(cur, localTags) && !isLiteralOrWireTail(prevToken, t0) && !isHashPrefixedChainMember(prevToken, t0)) {
       const ref = peekOperandRefChain(cur, localTags);
       operandRefs.push(ref);
       if (bracketDepth === 0) {

@@ -20,6 +20,7 @@ const { checkLadWiring } = require("../out/linter/ladWiringChecks");
 const { checkUndeclaredIdentifiers, checkIllegalDotAccess } = require("../out/linter/symbolChecks");
 const { checkSclConditionTypes } = require("../out/linter/symbolChecks");
 const { checkSclInstructions } = require("../out/linter/sclInstructionChecks");
+const { checkSclSyntaxStructure } = require("../out/linter/synStructureChecks");
 const { checkSclExpressionTypes } = require("../out/linter/exprTypeChecks");
 const { checkStructCountPerDataBlock } = require("../out/linter/compositionChecks");
 
@@ -76,7 +77,20 @@ const before = buildDocumentIndex(source, ruleSet, emptyIndex, "SafetyConsumer.s
 assert.ok(before.diagnostics.some((diagnostic) => diagnostic.code === "literal-type-mismatch"));
 
 const blockIndex = new BlockIndex();
-blockIndex.rebuild([], [{ path: "PLC tags/F-DI.xml", text: xml }]);
+blockIndex.rebuild(
+  [{
+    path: "DB_EdgeCaseDemo.scl",
+    text: `DATA_BLOCK "DB_EdgeCaseDemo"
+VAR
+  sString : String[100];
+  bEnabled : Bool;
+END_VAR
+BEGIN
+END_DATA_BLOCK
+`,
+  }],
+  [{ path: "PLC tags/F-DI.xml", text: xml }]
+);
 assert.equal(blockIndex.globalTagSize, 4);
 assert.equal(blockIndex.getGlobalTag("di_resetalarm_cmd").name, "DI_ResetAlarm_CMD");
 
@@ -127,6 +141,55 @@ assert.deepEqual(sclDiagnostics, []);
 assert.ok(sclBlock.sclOperandRefs.some((ref) => ref.external && ref.segments[0] === "FDI_NS2_E_Stop_NC_FB"));
 assert.ok(sclBlock.sclConditionChecks.some((check) => check.kind === "tag" && check.ref.external));
 assert.ok(sclBlock.sclAssignments.some((assignment) => assignment.expr.kind === "binary" && assignment.expr.left.kind === "operand" && assignment.expr.left.ref.external));
+
+const externalDbSource = `FUNCTION_BLOCK "ExternalDbMemberConsumer"
+VAR
+  localString : String[100];
+  localBool : Bool;
+END_VAR
+BEGIN
+  "DB_EdgeCaseDemo".#sString := '';
+  "DB_EdgeCaseDemo".sString := '';
+  localString := "DB_EdgeCaseDemo".#sString;
+  IF "DB_EdgeCaseDemo".#bEnabled THEN
+    localBool := TRUE;
+  END_IF;
+END_FUNCTION_BLOCK
+`;
+const externalDbBlock = parseS7dclFile(externalDbSource)[0];
+const externalDbRefs = externalDbBlock.sclOperandRefs.filter((ref) => ref.external);
+assert.ok(externalDbRefs.some((ref) => ref.segments.join(".") === "DB_EdgeCaseDemo.sString"));
+assert.ok(externalDbRefs.some((ref) => ref.segments.join(".") === "DB_EdgeCaseDemo.bEnabled"));
+assert.ok(
+  externalDbBlock.sclAssignments.some(
+    (assignment) =>
+      assignment.expr.kind === "operand" &&
+      assignment.expr.ref.external &&
+      assignment.expr.ref.segments.join(".") === "DB_EdgeCaseDemo.sString"
+  ),
+  "an external DB member is parsed as an assignment expression"
+);
+assert.ok(
+  !externalDbBlock.sclOperandRefs.some((ref) => !ref.external && ["sString", "bEnabled"].includes(ref.segments[0])),
+  "hash-prefixed external members are not re-read as local operands"
+);
+assert.equal(
+  checkSclConditionTypes(externalDbBlock, blockIndex, emptyTypeCache, ruleSet).length,
+  0,
+  "a # prefixed external DB Bool member is accepted as an IF condition"
+);
+assert.deepEqual(
+  [
+    ...checkSclInstructions(externalDbBlock, ruleSet, blockIndex, emptyTypeCache),
+    ...checkUndeclaredIdentifiers(externalDbBlock, blockIndex, emptyTypeCache, ruleSet),
+    ...checkIllegalDotAccess(externalDbBlock, blockIndex, emptyTypeCache, ruleSet),
+    ...checkSclExpressionTypes(externalDbBlock, ruleSet, blockIndex, emptyTypeCache),
+    ...checkSclSyntaxStructure(externalDbSource, ruleSet),
+    ...buildDocumentIndex(externalDbSource, ruleSet, blockIndex, "ExternalDbMemberConsumer.scl", "nb-NO", emptyTypeCache).diagnostics,
+  ],
+  [],
+  "both TIA's #member spelling and the unprefixed spelling resolve without diagnostics"
+);
 
 const sclIndex = buildDocumentIndex(sclSource, ruleSet, blockIndex, "SclTagConsumer.scl", "nb-NO", emptyTypeCache);
 const sclTagSpan = sclIndex.spans.find((span) => span.hoverMarkdown?.includes("AI_Safety_Count"));

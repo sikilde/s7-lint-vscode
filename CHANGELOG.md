@@ -12,6 +12,8 @@ Fixes for the README's known limitations
 - A FUNCTION's result variable (its own name) has the declared return type,
   so assignments to it and conditions on it are checked like any other local
   variable.
+- TIA-exported references such as `"DB_EdgeCaseDemo".#sString` are accepted
+  alongside the equivalent unprefixed member spelling.
 - XML exports keep their source lines. PLC data type, DATA_BLOCK and PLC tag
   declarations and their members report diagnostics and Go to Definition on
   their own line instead of line 1, also in CRLF files. Every block in a
